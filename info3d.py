@@ -15,6 +15,16 @@ from scipy.spatial import Delaunay
 #from pyntcloud import PyntCloud
 from sklearn.neighbors import NearestNeighbors
 
+def getPointDistance(_point_cloud, _triangles):
+    
+    distances = []
+    for triangle in _triangles:
+        d01 = LA.norm(_point_cloud[triangle[0],:3] - _point_cloud[triangle[1],:3])
+        d21 = LA.norm(_point_cloud[triangle[2],:3] - _point_cloud[triangle[1],:3])
+        d20 = LA.norm(_point_cloud[triangle[2],:3] - _point_cloud[triangle[0],:3])
+        distances.append([d01,d21,d20])
+        
+    return distances
 
 def getEuclideanNearestNeighbours(point_cloud, n=2, thresh_max=20):
     # As the name suggests, this returns the indices (as well as the distances)
