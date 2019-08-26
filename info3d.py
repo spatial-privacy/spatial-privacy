@@ -15,16 +15,14 @@ from scipy.spatial import Delaunay
 #from pyntcloud import PyntCloud
 from sklearn.neighbors import NearestNeighbors
 
-def getPointDistance(_point_cloud, _triangles):
-    
-    distances = []
-    for triangle in _triangles:
-        d01 = LA.norm(_point_cloud[triangle[0],:3] - _point_cloud[triangle[1],:3])
-        d21 = LA.norm(_point_cloud[triangle[2],:3] - _point_cloud[triangle[1],:3])
-        d20 = LA.norm(_point_cloud[triangle[2],:3] - _point_cloud[triangle[0],:3])
-        distances.append([d01,d21,d20])
-        
-    return distances
+
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m, h
+
 
 def getEuclideanNearestNeighbours(point_cloud, n=2, thresh_max=20):
     # As the name suggests, this returns the indices (as well as the distances)
@@ -675,7 +673,8 @@ def getRansacPlanes(
             # Add final candidate plane to list of planes
             planes.append([
                 bestPlane,
-                np.concatenate((np.stack((PX,PY,PZ)).T,depletable_pc[bestPoints][:,3:6]),axis=1),
+                #np.concatenate((np.stack((PX,PY,PZ)).T,depletable_pc[bestPoints][:,3:6]),axis=1),
+                np.concatenate((np.stack((PX,PY,PZ)).T,np.repeat([bestPlane[1]],len(PX),axis = 0)),axis=1),
                 p_triangles,
                 depletable_pc[sample]],
             )
@@ -1475,11 +1474,14 @@ def getErrorRate(qpr_scores, rank = 1):
     for radius, _scores in qpr_scores:
         _errors, _errors_map = getRankedErrorMaps(_scores, rank = rank)
         size = _errors_map.shape[-1]
+        mean, interval = mean_confidence_interval(_errors[:,2]/size,confidence = 0.95)
         qpr_error_rate.append([
             radius,
             np.mean(_errors[:,1]/size), # mean unweighted scores,
             np.mean(_errors[:,2]/size), # mean weighted scores,
-            np.std(_errors[:,2]/size)
+            np.std(_errors[:,2]/size), # std
+            mean,
+            interval
         ])
         qpr_errors.append([
             radius,
@@ -1494,7 +1496,10 @@ def getRankedErrorMaps(_scores, rank = 1):
     _errors = []
     _errors_map = []
 
-    for res, scores in _scores:
+    for i_scores, o_scores in enumerate(_scores):
+        
+        res = o_scores[0]
+        scores = o_scores[1]
 
         _error_map = np.zeros(scores.shape[0])
 
