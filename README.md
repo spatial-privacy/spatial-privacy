@@ -1,1 +1,2 @@
-# 3D-spatial-privacy
+# 3D Spatial Privacy
+
