@@ -50,16 +50,17 @@ def getEuclideanNearestNeighbours(point_cloud, n=2, thresh_max=20):
     
     return nearestneighbours, difference[:,1:n+1]
 
+def getTriangleAreas(_point_cloud, _triangles):
+
+    v1 = _point_cloud[_triangles[:,0],:3] - _point_cloud[_triangles[:,1],:3]
+    v2 = _point_cloud[_triangles[:,2],:3] - _point_cloud[_triangles[:,1],:3]
+    area = np.abs(LA.norm(np.cross(v1,v2), axis = 1))*0.5
+        
+    return area
 
 def getPointCloudArea(_point_cloud, _triangles):
     
-    area = 0
-    for triangle in _triangles:
-        v1 = _point_cloud[triangle[0],:3] - _point_cloud[triangle[1],:3]
-        v2 = _point_cloud[triangle[2],:3] - _point_cloud[triangle[1],:3]
-        area += np.abs(LA.norm(np.cross(v1,v2)))*0.5
-        
-    return area
+    return np.sum(getTriangleAreas(_point_cloud, _triangles))
 
 def OLDgetQuantizedPointCloudOnly(_point_cloud,scale = 5, verbose = False):
     
@@ -572,8 +573,71 @@ def getPartialPointCloud(
 #    print(stopcount)    
     return partial_pointcloud, partial_triangles, original_vertex
 
+def getDelaunayTriangles(
+    plane_params, # bestPlane, i.e. containing reference vertex and normal
+    pointcloud,
+    triangle_area_threshold = 0.1,
+    verbose = True
+):
+    d = -plane_params[0].dot(plane_params[1])
+    
+    PX = pointcloud[:,0]
+    PY = pointcloud[:,1]
+    PZ = pointcloud[:,2]  
+    
+    p_triangles = []
 
-def getRansacPlanes(
+    # Generalize the bestPlane to one of the surface-axis to get a 3-point Delaunay match
+    phi = math.fabs(plane_params[1][1]* 1./LA.norm(plane_params[1])) # y/r
+
+    try:
+        if math.degrees(math.acos(phi)) < 45 : # arc-cos(y/r) = phi < 45 --> horizontal
+            # use floor (plane x-z) as origin mesh
+
+            PY = (-plane_params[1][0] * PX - plane_params[1][2] * PZ - d) * 1. /plane_params[1][1]
+
+            surfaces_delaunay = Delaunay(np.stack((PX,PZ)).T)
+            p_triangles=surfaces_delaunay.simplices
+            #orientation = 'horizontal'
+        else:
+            #use vertical wall x-y as origin mesh
+            PZ = (-plane_params[1][0] * PX - plane_params[1][1] * PY - d) * 1. /plane_params[1][2]
+
+            surfaces_delaunay = Delaunay(np.stack((PX,PY)).T)
+            p_triangles=surfaces_delaunay.simplices
+            #orientation = 'vertical'
+    except:
+        # Error in getting Delaunay triangles.
+        pass
+        
+    if len(p_triangles) != 0:
+        v1 = pointcloud[p_triangles[:,0],:3] - pointcloud[p_triangles[:,1],:3]
+        v2 = pointcloud[p_triangles[:,2],:3] - pointcloud[p_triangles[:,1],:3]
+        area = np.abs(LA.norm(np.cross(v1,v2), axis = 1))*0.5
+        
+        if verbose:
+            print("  getDelaunayTriangles: threshold = {:.3f}, v1: ({.5f},{:.5f}); v2: ({:.5f},{:.5f})".format(
+                triangle_area_threshold,
+                np.amin(LA.norm(v1, axis = 1)),
+                np.amax(LA.norm(v1, axis = 1)),
+                np.amin(LA.norm(v2, axis = 1)),
+                np.amax(LA.norm(v2, axis = 1)),
+            ))
+            
+        p_triangles = p_triangles[
+            np.intersect1d(
+                np.intersect1d(
+                    np.where(area < triangle_area_threshold)[0],
+                    np.where(LA.norm(v1, axis = 1) < (2.0*triangle_area_threshold))[0]
+                ),
+                np.where(LA.norm(v2, axis = 1) < (2.0*triangle_area_threshold))[0]
+            )
+        ]
+        #p_pointCloud = pointcloud[np.unique(p_triangles.flatten())]
+
+    return p_triangles
+
+def getRansacPlanesOld(
     pointCloud,
     triangles,
     planes_to_find = 30, # number of planes to find
@@ -690,8 +754,398 @@ def getRansacPlanes(
     plane_properties = np.asarray(plane_properties)
     return planes, plane_properties
 
+def getRansacPlanes(
+    pointCloud,
+    planes_to_find = 30, # number of planes to find
+    threshold = 0.05,     # the point-plane distance threshold
+    trials = 100,       # the number of RANSAC trials
+    #plane_group = 200     # number of nearby points per plane
+):
 
-def getGeneralizedPointCloud(planes,plane_properties):
+    planeCollection = []
+    test_max = 10
+
+    t0 = time.time()
+
+    planes = []
+    #plane_properties = []
+
+    depletable_pc = np.copy(pointCloud)
+    #print("true points",len(depletable_pc))
+
+    zero_normals = 0
+    added_zero_normals = 0
+    
+    # Getting the planes
+    for i_plane in np.arange(planes_to_find):
+        #pass
+        bestPoints = []
+        trial = 0
+        t1 = time.time()
+
+        #neighbours, distance = getEuclideanNearestNeighbours(depletable_pc,3)
+
+        #print(object_name,i_plane,len(depletable_pc))
+        if len(depletable_pc) < 3:
+            continue
+        for i_trials in np.arange(trials):
+
+            sample = np.random.randint(len(depletable_pc))
+
+            testPlane = [depletable_pc[sample,:3],depletable_pc[sample,3:]]
+                         #np.cross(depletable_pc[near1,:3]-depletable_pc[sample,:3],
+                         #        depletable_pc[near2,:3]-depletable_pc[sample,:3]
+                         #        )]
+            testPoints = []
+            d = -testPlane[0].dot(testPlane[1])
+            for i, point in enumerate(depletable_pc): #[neighbours[sample]]
+                if LA.norm(testPlane[1])*LA.norm(point[3:]) == 0:
+                    zero_normals += 1
+                    if abs((np.dot(testPlane[1],point[:3])+d)*1.0/LA.norm(testPlane[1],ord = 2)) < threshold:
+                        # only add a point with zero_normal if very close to the plane
+                        added_zero_normals += 1
+                        testPoints.append(i)
+                if abs(np.dot(testPlane[1],point[3:])/(LA.norm(testPlane[1])*LA.norm(point[3:]))) > max(0,(1-20*threshold)):
+                    # if normals are close accept if near to the candidate plane
+                    if abs((np.dot(testPlane[1],point[:3])+d)*1.0/LA.norm(testPlane[1],ord = 2)) < threshold:
+                        testPoints.append(i)
+            if len(testPoints) < 20:
+                continue
+            if len(testPoints) > len(bestPoints):#plane_group:
+                trial += 1
+                bestPlane = testPlane
+                bestPoints = testPoints
+
+        #print(object_name,i_plane,len(depletable_pc),bestPlane,depletable_pc[sample])
+        #print("Added a ",bestPlane," in",time.time()-t1,"seconds")
+        if trial > 1:
+            d = -bestPlane[0].dot(bestPlane[1])
+
+            PX = depletable_pc[bestPoints][:,0]
+            PY = depletable_pc[bestPoints][:,1]
+            PZ = depletable_pc[bestPoints][:,2]
+
+            # Add final candidate plane to list of planes
+            planes.append([
+                bestPlane,
+                #np.concatenate((np.stack((PX,PY,PZ)).T,depletable_pc[bestPoints][:,3:6]),axis=1),
+                np.concatenate((np.stack((PX,PY,PZ)).T,np.repeat([bestPlane[1]],len(PX),axis = 0)),axis=1),
+                depletable_pc[sample]
+            ])
+
+            # Remove points of final plane from remaining candidate points
+            depletable_pc = np.delete(depletable_pc,bestPoints,0)
+
+    #print(len(pointCloud),"points, Time to extract",len(planes),"planes: ", time.time() - t0)
+    #print(len(depletable_pc),"remaining points")
+    #print(zero_normals,"with zero normals")
+    #print(added_zero_normals,"added zero normals")
+    #planeCollection.append([object_name, planes])
+    #plane_properties = np.asarray(plane_properties)
+    return planes
+
+def getLOCALIZEDRansacPlanes(
+    pointCloud,
+    planes_to_find = 1, # number of planes to find
+    threshold = 0.05,     # the point-plane distance threshold
+    trials = 100,       # the number of RANSAC trials
+    original_vertex = [],
+    verbose = False
+    #plane_group = 200     # number of nearby points per plane
+):
+
+    planeCollection = []
+    test_max = 10
+
+    t0 = time.time()
+
+    planes = []
+    #plane_properties = []
+
+    depletable_pc = np.copy(pointCloud)
+    #print("true points",len(depletable_pc))
+
+    zero_normals = 0
+    added_zero_normals = 0
+    
+    # Getting the plane of the hitPoint
+    #sample = np.random.randint(len(depletable_pc))
+
+    firstPlane = [original_vertex[:3],original_vertex[3:]]
+                 #np.cross(depletable_pc[near1,:3]-depletable_pc[sample,:3],
+                 #        depletable_pc[near2,:3]-depletable_pc[sample,:3]
+                 #        )]
+    
+    firstPoints = []
+    d = -firstPlane[0].dot(firstPlane[1])
+    
+    for i, point in enumerate(depletable_pc): #[neighbours[sample]]
+        if LA.norm(point[3:]) == 0:
+            zero_normals += 1
+            if abs((np.dot(firstPlane[1],point[:3])+d)*1.0/LA.norm(firstPlane[1],ord = 2)) < threshold:
+                # only add a point with zero_normal if very close to the plane
+                added_zero_normals += 1
+                firstPoints.append(i)
+        if abs(np.dot(firstPlane[1],point[3:])/(LA.norm(firstPlane[1])*LA.norm(point[3:]))) > (1-20*threshold):
+            # if normals are close accept if near to the candidate plane
+            if abs((np.dot(firstPlane[1],point[:3])+d)*1.0/LA.norm(firstPlane[1],ord = 2)) < threshold:
+                firstPoints.append(i)
+                
+    d = -firstPlane[0].dot(firstPlane[1])
+    
+    if verbose: 
+        print(depletable_pc.shape)
+        print("First Points",len(firstPoints), firstPlane)
+    PX = depletable_pc[firstPoints][:,0]
+    PY = depletable_pc[firstPoints][:,1]
+    PZ = depletable_pc[firstPoints][:,2]        
+
+    # Add final candidate plane to list of planes
+    planes.append([
+        firstPlane,
+        #np.concatenate((np.stack((PX,PY,PZ)).T,depletable_pc[bestPoints][:,3:6]),axis=1),
+        np.concatenate((np.stack((PX,PY,PZ)).T,np.repeat([firstPlane[1]],len(PX),axis = 0)),axis=1),
+        original_vertex
+    ])
+    
+    # Remove points of first plane from remaining candidate points
+    depletable_pc = np.delete(depletable_pc,firstPoints,0)
+    
+    all_planes = planes
+    
+    if planes_to_find - 1 > 0:
+        additional_planes = getRansacPlanes(
+            pointCloud = depletable_pc,
+            planes_to_find = planes_to_find - 1,
+            threshold = threshold,
+            trials = trials
+        )
+        
+        if len(additional_planes) != 0:        
+            all_planes = planes + additional_planes
+
+    return all_planes
+
+def updatePlanesWithSubsumption(
+    new_pointCloud,
+    existing_pointCloud,
+    planes_to_find = 30, # number of planes to find
+    threshold = 0.05,     # the point-plane distance threshold
+    trials = 100,
+    verbose = False
+):
+
+    _, unq_idx = np.unique(
+        np.round(existing_pointCloud[:,:3],decimals = 3),
+        axis = 0,
+        return_index=True
+    )
+    existing_pointCloud = existing_pointCloud[unq_idx]
+    #existing_pointCloud[:,:3] = np.round(existing_pointCloud[:,:3],decimals = 5)
+    #existing_pointCloud[:,3:] = np.round(existing_pointCloud[:,3:],decimals = 5)
+    new_pointCloud = np.unique(new_pointCloud, axis = 0)
+    #existing_pointCloud = np.unique(existing_pointCloud, axis = 0)
+    
+    depletable_pc = np.copy(new_pointCloud)
+    depletable_existing = np.copy(existing_pointCloud)
+
+    if verbose:
+        print("New point cloud",depletable_pc.shape)
+        print("Existing point cloud",depletable_existing.shape)
+    
+    planeCollection = []
+
+    test_max = 10
+
+    t0 = time.time()
+
+    planes = []
+    #plane_properties = []
+
+    zero_normals = 0
+    added_zero_normals = 0
+
+    existing_normals = np.unique(np.round(existing_pointCloud[:,3:],decimals = 5), axis = 0)
+    
+    if verbose:
+        print(" ",existing_normals.shape,"Normals")
+
+    # Getting the planes
+    for i_plane in np.arange(planes_to_find):
+        #pass
+        best_pc = []
+        bestPoints = []
+        trial = 0
+        t1 = time.time()
+
+        matched_idx_from_existing = []
+
+        #neighbours, distance = getEuclideanNearestNeighbours(depletable_pc,3)
+
+        #print(object_name,i_plane,len(depletable_pc))
+        if len(depletable_pc) < 3:
+            continue
+
+        for normal in existing_normals:
+
+            existing_pc_idx = np.where(np.round(depletable_existing[:,3:], decimals = 5) == normal)[0]
+            
+            if len(existing_pc_idx) == 0:
+                continue
+
+            sample = np.random.choice(existing_pc_idx)
+
+            testPlane = [depletable_existing[sample,:3],depletable_existing[sample,3:]]
+
+            #print(normal, sample, testPlane)
+
+            testPoints = []
+            d = -testPlane[0].dot(testPlane[1])
+            for i, point in enumerate(depletable_pc): #[neighbours[sample]]
+                if (LA.norm(testPlane[1])*LA.norm(point[3:])) == 0:
+                    zero_normals += 1
+                    if abs((np.dot(testPlane[1],point[:3])+d)*1.0/LA.norm(testPlane[1],ord = 2)) < threshold:
+                        # only add a point with zero_normal if very close to the plane
+                        added_zero_normals += 1
+                        testPoints.append(i)
+                if abs(np.dot(testPlane[1],point[3:])/(LA.norm(testPlane[1])*LA.norm(point[3:]))) > max(0,(1-20*threshold)):
+                    # if normals are close accept if near to the candidate plane
+                    if abs((np.dot(testPlane[1],point[:3])+d)*1.0/LA.norm(testPlane[1],ord = 2)) < threshold:
+                        testPoints.append(i)
+                        
+            #if len(testPoints) < 10:
+            #    continue
+            if len(testPoints) > len(bestPoints):#plane_group:
+                trial += 1
+                bestPlane = testPlane
+                bestPoints = testPoints
+                matched_idx_from_existing = existing_pc_idx
+
+        #
+        if trial > 0:
+            
+            #candidate_new_points = depletable_pc[bestPoints,:3]
+            
+            #nbrs = NearestNeighbors(n_neighbors=1, algorithm='brute').fit(depletable_existing[matched_idx_from_existing,:3])
+            #distances, indices = nbrs.kneighbors(candidate_new_points)
+            
+            best_pc = np.concatenate(
+                (
+                    depletable_existing[matched_idx_from_existing,:3],
+                    depletable_pc[bestPoints,:3]#candidate_new_points[np.where(distances>0.1)[0]]
+                ),
+                axis = 0
+            )
+            
+            best_pc = np.unique(np.around(best_pc,decimals=3),axis = 0)
+            
+            if verbose: print(" Added a ",bestPlane,"\n in {:.3f} seconds".format(time.time() - t1))
+
+            d = -bestPlane[0].dot(bestPlane[1])
+
+            # Add final candidate plane to list of planes
+            planes.append([
+                bestPlane,
+                #np.concatenate((np.stack((PX,PY,PZ)).T,depletable_pc[bestPoints][:,3:6]),axis=1),
+                np.concatenate((best_pc[:,:3],np.repeat([bestPlane[1]],len(best_pc),axis = 0)),axis=1),
+                depletable_existing[sample]],
+            )
+
+            # Remove points of final plane from remaining candidate points
+            depletable_pc = np.delete(depletable_pc,bestPoints,0)
+            depletable_existing = np.delete(depletable_existing,matched_idx_from_existing,0)
+
+    if verbose:
+        print(" ",len(planes)," updated planes.")
+        print("Remaining from new",depletable_pc.shape)
+        print("Remaining from exisiting",depletable_existing.shape)
+        
+    try:
+        remaining_existing_normals = np.unique(np.round(depletable_existing[:,3:],decimals = 5), axis = 0)
+    except:
+        remaining_existing_normals = []
+
+    if planes_to_find - len(planes) - len(remaining_existing_normals) > 1:
+    
+        more_planes = getRansacPlanes(
+            depletable_pc,
+            planes_to_find = planes_to_find - len(planes) - len(remaining_existing_normals),
+            threshold = threshold,
+            trials = trials
+        )
+
+        if verbose: print("  ",len(more_planes),"additional planes")
+            
+        planes = planes + more_planes
+
+    if verbose and remaining_existing_normals.any(): print(remaining_existing_normals.shape,"Remaining normals")
+
+    for normal in remaining_existing_normals:
+
+        existing_pc_idx = np.where(np.round(depletable_existing[:,3:], decimals = 5) == normal)[0]
+
+        planes.append([
+            [
+                depletable_existing[np.random.choice(existing_pc_idx),:3],
+                normal
+            ],
+            depletable_existing[existing_pc_idx],
+            [] # empty because already
+        ])
+
+    if verbose: print(len(planes),"Final planes")
+        
+    return planes
+
+
+def getGeneralizedPointCloud(
+    planes,
+    triangle_area_threshold = 0.1,
+    verbose = False  
+):
+    
+    included_points = 0
+
+    generalized_points = []
+    generalized_triangles = []
+
+    for plane_params, points, refpoint in planes:
+        #plane_params = plane_[0]
+        #points = plane_[1]
+        #refpoint = plane_[2]
+        
+        #triangles = plane_[2]
+        triangles = getDelaunayTriangles(
+            plane_params, 
+            points,
+            triangle_area_threshold = triangle_area_threshold,
+            verbose = verbose
+        )
+        
+        if triangles == []:
+            if verbose: print("No triangles at",plane_params,len(planes),points.shape)
+            continue
+
+        PX = points[:,0]
+        PY = points[:,1]
+        PZ = points[:,2]
+
+        included_points += len(points)
+
+        # Populating the 
+        if len(generalized_points)== 0:
+            generalized_points = np.concatenate((np.stack((PX,PY,PZ)).T,np.tile(plane_params[1],(len(PX),1))),axis=1)
+            generalized_triangles = triangles[:,:3]
+        else:
+            generalized_triangles = np.append(generalized_triangles,triangles[:,:3]+len(generalized_points),axis=0)
+            generalized_points = np.append(generalized_points,
+                                           np.concatenate((np.stack((PX,PY,PZ)).T,np.tile(plane_params[1],(len(PX),1))),axis=1),
+                                           axis=0)
+            
+    return generalized_points, generalized_triangles
+
+
+def getGeneralizedPointCloudOld(planes,plane_properties,plane_threshold = 0.75):
     included_points = 0
 
     generalized_points = []
@@ -703,7 +1157,7 @@ def getGeneralizedPointCloud(planes,plane_properties):
         triangles = plane_[2]
         refpoint = plane_[3]
 
-        if plane_properties[i,1]<0.75*min(np.mean(plane_properties[:,1]),np.median(plane_properties[:,1])):
+        if plane_properties[i,1]<plane_threshold*min(np.mean(plane_properties[:,1]),np.median(plane_properties[:,1])):
             continue
 
         PX = points[:,0]
@@ -1564,3 +2018,53 @@ def downSampleDescriptors(descriptors,factor=2,cylindrical_shape = np.asarray([1
     downsampled_d = np.reshape(downsampled_d,(downsampled_d.shape[0],np.prod(downsampled_d.shape[1:])))
     
     return downsampled_d
+
+def get_original_vertex(
+    vertex,
+    tx_axis,#translation axis
+    tx, # translation
+    r_axis, #rotation axis
+    theta # angle of rotation
+):
+    
+    vertex[tx_axis] = vertex[tx_axis] - tx
+    
+    #print(vertex)
+
+    # recovering rotation
+    axis_index = np.delete([0,1,2],r_axis)
+    #print(axis_index, axis_index[0], axis_index[1])
+    
+    vertex_copy = np.copy(vertex)
+
+    vertex[axis_index[0]] = vertex_copy[axis_index[0]]*np.cos(-theta) - vertex_copy[axis_index[1]]*np.sin(-theta)
+    vertex[axis_index[1]] = vertex_copy[axis_index[0]]*np.sin(-theta) + vertex_copy[axis_index[1]]*np.cos(-theta)
+    
+    return vertex
+    
+def rotatePointCloud(pointCloud, theta = (np.pi)/3, axis = 1, verbose = False):
+    
+    rotation_matrix = np.asarray([
+        [
+            [1, 0, 0],
+            [0, np.cos(theta), np.sin(theta)],
+            [0, -np.sin(theta), np.cos(theta)],
+        ],
+        [
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0, 1, 0],
+            [np.sin(theta), 0, np.cos(theta)],
+        ],
+        [
+            [np.cos(theta), np.sin(theta), 0],
+            [-np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1],
+        ],
+    ])
+    
+    n_pointCloud = np.copy(pointCloud) # x, y, z
+    
+    n_pointCloud[:,:3] = np.matmul(pointCloud[:,:3],rotation_matrix[axis])
+    n_pointCloud[:,3:] = np.matmul(pointCloud[:,3:],rotation_matrix[axis])
+
+    return n_pointCloud
