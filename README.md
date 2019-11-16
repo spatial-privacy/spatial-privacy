@@ -47,4 +47,5 @@ For our dataset, we gathered real 3D point cloud data using the Microsoft HoloLe
   <br>
   <b>Figure 4c:</b> Conservative release of generalized planes<br>
 </p>
+
 In this work, we present *conservative plane releasing*, where we limit the number of planes a generalization produces. Fig. 4a shows an example set of planes that are released after RANSAC generalization of the revealed partial raw spaces (in Fig. 4b). Then, we can limit the maximum allowable planes that can be released, say, a maximum of 3 planes in total. As we can see in Fig. 4c, both partial releases produces only 3 planes.
