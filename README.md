@@ -36,14 +36,15 @@ The notebook ![3D-spatial-privacy-sample](https://github.com/spatial-privacy/spa
 For our dataset, we gathered real 3D point cloud data using the Microsoft HoloLens in various environments to demonstrate the leakage from actual human-scale spaces in which an MR device is usually used. As shown in Fig. 3, our collected environments include the following spaces: a work space, a reception area, an office kitchen or pantry, an apartment, a drive way, a hall way, and a stair well.
 
 # PROPOSED MECHANISM
+
 <p align="center">
-  <img src="images/partial-releases-2.png" width="500">
+  <img src="images/partial-releases-2.png" width="300">
   <br>
   <b>Figure 4a:</b> Sample partial spaces of a bigger space<br>
-    <img src="images/partial-generalized-releases-2.png" width="450">
+    <img src="images/partial-generalized-releases-2.png" width="275">
   <br>
   <b>Figure 4b:</b> Generalizing the partial spaces<br>
-    <img src="images/partial-conservative-releases-2.png" width="450">
+    <img src="images/partial-conservative-releases-2.png" width="275">
   <br>
   <b>Figure 4c:</b> Conservative release of generalized planes<br>
 </p>
