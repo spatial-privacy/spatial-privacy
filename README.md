@@ -2,9 +2,9 @@
 
 [Background](#background)
 
-![Sample Code](#sample-code)
+[Sample Code](#sample-code)
 
-![Dataset](#dataset)
+[Dataset](#dataset)
 
 
 # ABSTRACT
