@@ -34,3 +34,17 @@ The notebook ![3D-spatial-privacy-sample](https://github.com/spatial-privacy/spa
 </p>
 
 For our dataset, we gathered real 3D point cloud data using the Microsoft HoloLens in various environments to demonstrate the leakage from actual human-scale spaces in which an MR device is usually used. As shown in Fig. 3, our collected environments include the following spaces: a work space, a reception area, an office kitchen or pantry, an apartment, a drive way, a hall way, and a stair well.
+
+# PROPOSED MECHANISM
+<p align="center">
+  <img src="images/partial-releases-2.png" width="500">
+  <br>
+  <b>Figure 4a:</b> Sample partial spaces of a bigger space<br>
+    <img src="images/partial-generalized-releases-2.png" width="450">
+  <br>
+  <b>Figure 4b:</b> Generalizing the partial spaces<br>
+    <img src="images/partial-conservative-releases-2.png" width="450">
+  <br>
+  <b>Figure 4c:</b> Conservative release of generalized planes<br>
+</p>
+In this work, we present *conservative plane releasing*, where we limit the number of planes a generalization produces. Fig. 4a shows an example set of planes that are released after RANSAC generalization of the revealed partial raw spaces (in Fig. 4b). Then, we can limit the maximum allowable planes that can be released, say, a maximum of 3 planes in total. As we can see in Fig. 4c, both partial releases produces only 3 planes.
