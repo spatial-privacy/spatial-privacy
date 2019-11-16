@@ -1,11 +1,10 @@
 # 3D Spatial Privacy
 
-![Background](https://github.com/spatial-privacy/spatial-privacy#background)
+[Background](#background)
 
-![Sample Code](https://github.com/spatial-privacy/spatial-privacy#sample-code)
+![Sample Code](#sample-code)
 
-![Dataset](https://github.com/spatial-privacy/spatial-privacy#dataset)
-
+![Dataset](#dataset)
 
 
 # ABSTRACT
