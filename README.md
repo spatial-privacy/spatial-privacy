@@ -33,6 +33,8 @@ The notebook ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/sp
 2. the number of successively released partial spaces
 3. the number of *generalized* planes released
 
+A separate notebook, i.e. ![3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb), just plots the available sample results.
+
 ## Manual to ![3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb)
 
 Step 0: Extract the point cloud from the OBJ files.
@@ -61,6 +63,14 @@ Step 2.2: Results of successive partial spaces.
 Step 3.1: Test successive partial spaces with conservative releasing.
 
 Step 3.2: Results of successive partial spaces with conservative releasing.
+
+## Manual to ![3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb)
+
+Step 1: Results of partial spaces testing.
+
+Step 2: Results of successive partial spaces.
+
+Step 3: Results of successive partial spaces with conservative releasing.
 
 
 # DATASET
