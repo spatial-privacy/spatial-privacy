@@ -29,7 +29,8 @@ def getRankedErrors_withKeypointMatches(_scores, rank = 1):
                     obj_meta[0],
                     1,
                     np.nan,
-                    np.nan
+                    np.nan,
+                    np.argsort(adjusted_scores)[-rank:][0]
                 ])
             else:
                 
@@ -45,14 +46,16 @@ def getRankedErrors_withKeypointMatches(_scores, rank = 1):
                     obj_meta[0],
                     0,
                     LA.norm(np.mean(best_ref_kps, axis = 0) - obj_meta[2][:3]),
-                    LA.norm(np.mean(ref_kp[:,:3], axis = 0) - obj_meta[2][:3])
+                    LA.norm(np.mean(ref_kp[:,:3], axis = 0) - obj_meta[2][:3]),
+                    np.argsort(adjusted_scores)[-rank:][0]
                 ])
         else:
             _errors.append([
                 obj_meta[0],
                 1,
                 np.nan,
-                np.nan
+                np.nan,
+                np.argsort(adjusted_scores)[-rank:][0]
             ])
 
     _errors = np.asarray(_errors)
@@ -95,9 +98,10 @@ def NN_matcher(partial_scores):
         #if i_o not in np.argsort(weighted_scores)[::-1][:1]: #!= i_o:
         if obj_meta[0] != np.argmax(weighted_scores): #!= i_o:
             errors.append([
-                obj_meta[0],
-                1,
-                np.nan
+                obj_meta[0], # object meta information
+                1, #correct inter-space label or not
+                np.nan, # distance from correct intra-spae label
+                np.argmax(weighted_scores)
             ])
         else: # Correct inter-space label; then, check intra-space label.
             
@@ -116,7 +120,8 @@ def NN_matcher(partial_scores):
             errors.append([
                 obj_meta[0],
                 0,
-                LA.norm(np.mean(best_ref_kps, axis = 0) - obj_meta[2][:3])
+                LA.norm(np.mean(best_ref_kps, axis = 0) - obj_meta[2][:3]),
+                np.argmax(weighted_scores)
             ])
 
     errors = np.asarray(errors)
@@ -442,33 +447,46 @@ def get_best_kp_matches(
     combine = True
 ):
     
-    if diff_ratios != []:# Get indices of pairs of matched descriptors gave the best ratio
-        best_ratio_inidices = np.where(diff_ratios<ratio_threshold)
+    best_ratio_inidices = [[],[]]
+        
+    while len(best_ratio_inidices[0]) == 0:
+        
+        if diff_ratios != []:# Get indices of pairs of matched descriptors gave the best ratio
+            best_ratio_inidices = np.where(diff_ratios<ratio_threshold)
 
-        # Get the corresponding kp pairs.
-        best_ratio_qry_kp = qry_kp[best_ratio_inidices[0]][:,:3]
-        best_ratio_ref_kp = ref_kp[best_ratio_inidices[0]][:,:3]
-    else: 
-        best_ratio_qry_kp = qry_kp[:,:3]
-        best_ratio_ref_kp = ref_kp[:,:3]
+            # Get the corresponding kp pairs.
+            best_ratio_qry_kp = qry_kp[best_ratio_inidices[0]][:,:3]
+            best_ratio_ref_kp = ref_kp[best_ratio_inidices[0]][:,:3]
+        else: 
+            best_ratio_qry_kp = qry_kp[:,:3]
+            best_ratio_ref_kp = ref_kp[:,:3]
+            
+        ratio_threshold += 0.01
+        if ratio_threshold >= 1.0:
+            #print(" Failed to get best matches.")
+            return ref_kp[:,:3], qry_kp[:,:3]
+    
 
     # Get only the unique ones among the reference kp pairs which can have duplicates.
     unq_ref_kp, unq_idx = np.unique(best_ratio_ref_kp,axis = 0, return_index=True)
     unq_qry_kp = best_ratio_qry_kp[unq_idx]
-    
+
     # Then, prepare for checking the inter-kp vectors.
     diff_qry_kps = np.repeat(unq_qry_kp[np.newaxis],repeats = len(unq_qry_kp), axis = 0) - unq_qry_kp[:,np.newaxis,:]
     diff_ref_kps = np.repeat(unq_ref_kp[np.newaxis],repeats = len(unq_ref_kp), axis = 0) - unq_ref_kp[:,np.newaxis,:]
 
-    unq_diff_qry_kps = skip_diag_masking(diff_qry_kps)
-    unq_diff_ref_kps = skip_diag_masking(diff_ref_kps)
-    
+    try:
+        unq_diff_qry_kps = skip_diag_masking(diff_qry_kps)
+        unq_diff_ref_kps = skip_diag_masking(diff_ref_kps)
+    except:
+        return ref_kp, qry_kp
+
     # Compare inter-kp vectors using cosine similarity. 
     Norm_unq_diff_qry_kps = LA.norm(unq_diff_qry_kps, axis = -1)
     Norm_unq_diff_ref_kps = LA.norm(unq_diff_ref_kps, axis = -1)
     similarity_of_length = np.exp(-0.5*np.abs(Norm_unq_diff_qry_kps - Norm_unq_diff_ref_kps))
     similarity_of_angle = np.sum(np.multiply(unq_diff_qry_kps,unq_diff_ref_kps), axis = -1)/np.multiply(Norm_unq_diff_qry_kps,Norm_unq_diff_ref_kps)
-    
+
     if combine:
         similarity_of_shape = np.multiply(similarity_of_length,similarity_of_angle)
     else:
@@ -479,23 +497,24 @@ def get_best_kp_matches(
         np.abs(similarity_of_shape), 
         good_match_threshold*np.ones(similarity_of_shape.shape)
     )
-    
+
     while np.max(np.count_nonzero(good_matches, axis = -1)) < 0.1*len(ref_kp):
         good_match_threshold = good_match_threshold - 0.05
         good_matches = np.greater(
             np.abs(similarity_of_shape), 
             good_match_threshold*np.ones(similarity_of_shape.shape)
         )
-    
+
     # Get which of the kp-pairs give the most good matches
     good_matches_ref_kp = np.argmax(np.count_nonzero(good_matches, axis = -1))
     good_matches_kp_idx = np.insert(good_matches[good_matches_ref_kp],True,good_matches_ref_kp)
     good_matches_kp_idx.shape
-    
+
     # Get corresponding indices of those with good kp matches
     for_plotting_idx = np.where(good_matches_kp_idx == True)[0]
 
     for_plotting_qry_kps = unq_qry_kp[for_plotting_idx]
     for_plotting_ref_kps = unq_ref_kp[for_plotting_idx]
+        
     
     return for_plotting_ref_kps, for_plotting_qry_kps
