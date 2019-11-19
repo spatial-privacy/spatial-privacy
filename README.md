@@ -33,6 +33,24 @@ The notebook ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/sp
 2. the number of successively released partial spaces
 3. the number of *generalized* planes released
 
+## Manual to ![3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb)
+Step 0: Extract the point cloud from the OBJ files.
+Step 0.1: Compute the NN-trees with a set of neighbor size, i.e. nn_range. We use this to generate sample partial spaces.
+Step 1: Compute the descriptors of the spaces from the point cloud.
+Step 2.1: Generate partial spaces.
+Step 2.2: Generate successive partial spaces.
+
+
+## Manual to ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb)
+Step 1.1.1: Test RAW partial spaces.
+Step 1.1.2: Test RANSAC-generalized partial spaces.
+Step 1.1.3: Results of partial spaces testing.
+Step 1.2.1: Test successive partial spaces.
+Step 1.2.2: Results of successive partial spaces.
+Step 1.3.1: Test successive partial spaces with conservative releasing.
+Step 1.3.2: Results of successive partial spaces with conservative releasing.
+
+
 # DATASET
 <p align="center">
   <img src="images/all_spaces_sample_3.png" width="500">
