@@ -48,19 +48,19 @@ Step 2.2: Generate successive partial spaces.
 
 ## Manual to ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb)
 
-Step 1.1.1: Test RAW partial spaces.
+Step 1.1: Test RAW partial spaces.
 
-Step 1.1.2: Test RANSAC-generalized partial spaces.
+Step 1.2: Test RANSAC-generalized partial spaces.
 
-Step 1.1.3: Results of partial spaces testing.
+Step 1.3: Results of partial spaces testing.
 
-Step 1.2.1: Test successive partial spaces.
+Step 2.1: Test successive partial spaces.
 
-Step 1.2.2: Results of successive partial spaces.
+Step 2.2: Results of successive partial spaces.
 
-Step 1.3.1: Test successive partial spaces with conservative releasing.
+Step 3.1: Test successive partial spaces with conservative releasing.
 
-Step 1.3.2: Results of successive partial spaces with conservative releasing.
+Step 3.2: Results of successive partial spaces with conservative releasing.
 
 
 # DATASET
