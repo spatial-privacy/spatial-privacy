@@ -2018,3 +2018,30 @@ def downSampleDescriptors(descriptors,factor=2,cylindrical_shape = np.asarray([1
     downsampled_d = np.reshape(downsampled_d,(downsampled_d.shape[0],np.prod(downsampled_d.shape[1:])))
     
     return downsampled_d
+
+def rotatePointCloud(pointCloud, theta = (np.pi)/3, axis = 1, verbose = False):
+    
+    rotation_matrix = np.asarray([
+        [
+            [1, 0, 0],
+            [0, np.cos(theta), np.sin(theta)],
+            [0, -np.sin(theta), np.cos(theta)],
+        ],
+        [
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0, 1, 0],
+            [np.sin(theta), 0, np.cos(theta)],
+        ],
+        [
+            [np.cos(theta), np.sin(theta), 0],
+            [-np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1],
+        ],
+    ])
+    
+    n_pointCloud = np.copy(pointCloud) # x, y, z
+    
+    n_pointCloud[:,:3] = np.matmul(pointCloud[:,:3],rotation_matrix[axis])
+    n_pointCloud[:,3:] = np.matmul(pointCloud[:,3:],rotation_matrix[axis])
+
+    return n_pointCloud
