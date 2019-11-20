@@ -66,6 +66,8 @@ Step 3.2: Results of successive partial spaces with conservative releasing.
 
 ## Manual to ![3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb)
 
+Note: We are using the uploaded results in bz2 files for this notebook. The results in regular pickle files are not available iin this repo. But, of course, you can rerun the testing to produce new pickle files and use it in this notebook. The file access to the regular pickle files are just commented out, so you can just uncomment them to use them.
+
 Step 1: Results of partial spaces testing.
 
 Step 2: Results of successive partial spaces.
