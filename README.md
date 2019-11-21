@@ -74,28 +74,42 @@ Step 2: Results of successive partial spaces.
 
 Step 3: Results of successive partial spaces with conservative releasing.
 
+## Sample results
+
+<p align="center">
+  <img src="testing_results/plots/partial-spaces.png" width = "800">
+  <br>
+  <b>Figure 3:</b> Average inter- and intra-space privacy of partial spaces with varying radius.<br>
+</p>
+
+<p align="center">
+  <img src="testing_results/plots/successivepartial-spaces.png" width = "800">
+  <br>
+  <b>Figure 4:</b> Average inter- and intra-space privacy of successively released partial spaces with increasing number of releases.<br>
+</p>
+
 
 # DATASET
 <p align="center">
   <img src="images/all_spaces_sample_3.png" width="500">
   <br>
-  <b>Figure 3:</b> 3D point clouds of the 7 collected environments (left); a 3D surface of a sample space (bottom-right), and its 2D-RGB view (top-right)<br>
+  <b>Figure 5:</b> 3D point clouds of the 7 collected environments (left); a 3D surface of a sample space (bottom-right), and its 2D-RGB view (top-right)<br>
 </p>
 
-For our dataset, we gathered real 3D point cloud data using the Microsoft HoloLens in various environments to demonstrate the leakage from actual human-scale spaces in which an MR device is usually used. As shown in Fig. 3, our collected environments include the following spaces: a work space, a reception area, an office kitchen or pantry, an apartment, a drive way, a hall way, and a stair well.
+For our dataset, we gathered real 3D point cloud data using the Microsoft HoloLens in various environments to demonstrate the leakage from actual human-scale spaces in which an MR device is usually used. As shown in Fig. 5, our collected environments include the following spaces: a work space, a reception area, an office kitchen or pantry, an apartment, a drive way, a hall way, and a stair well.
 
 # PROPOSED MECHANISM
 
 <p align="center">
   <img src="images/partial-releases-2.png" width="300">
   <br>
-  <b>Figure 4a:</b> Sample partial spaces of a bigger space<br>
+  <b>Figure 6a:</b> Sample partial spaces of a bigger space<br>
     <img src="images/partial-generalized-releases-2.png" width="275">
   <br>
-  <b>Figure 4b:</b> Generalizing the partial spaces<br>
+  <b>Figure 6b:</b> Generalizing the partial spaces<br>
     <img src="images/partial-conservative-releases-2.png" width="275">
   <br>
-  <b>Figure 4c:</b> Conservative release of generalized planes<br>
+  <b>Figure 6c:</b> Conservative release of generalized planes<br>
 </p>
 
-In this work, we present *conservative plane releasing*, where we limit the number of planes a generalization produces. Fig. 4a shows an example set of planes that are released after RANSAC generalization of the revealed partial raw spaces (in Fig. 4b). Then, we can limit the maximum allowable planes that can be released, say, a maximum of 3 planes in total. As we can see in Fig. 4c, both partial releases produces only 3 planes.
+In this work, we present *conservative plane releasing*, where we limit the number of planes a generalization produces. Fig. 6a shows an example set of planes that are released after RANSAC generalization of the revealed partial raw spaces (in Fig. 6b). Then, we can limit the maximum allowable planes that can be released, say, a maximum of 3 planes in total. As we can see in Fig. 6c, both partial releases produces only 3 planes.
