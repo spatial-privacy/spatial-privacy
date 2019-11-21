@@ -83,7 +83,7 @@ Step 3: Results of successive partial spaces with conservative releasing.
 </p>
 
 <p align="center">
-  <img src="testing_results/plots/successivepartial-spaces.png" width = "800">
+  <img src="testing_results/plots/successive-partial-spaces.png" width = "800">
   <br>
   <b>Figure 4:</b> Average inter- and intra-space privacy of successively released partial spaces with increasing number of releases.<br>
 </p>
