@@ -23,7 +23,7 @@ Augmented reality (AR) or mixed reality (MR) platforms require spatial understan
   <b>Figure 2:</b> Inserting an intermediate privacy-preserving mechanism M which aims to prevent spatial inference<br>
 </p>
 
-AR/MR platforms such as ![Google ARCore](https://developers.google.com/ar/), ![Apple ARKit](https://developer.apple.com/documentation/arkit), and ![Windows Mixed Reality API](https://www.microsoft.com/en-au/windows/windows-mixed-reality) requires spatial understanding of the user environment in order to deliver virtual augmentations that seemingly inhabit the real world, and, in some immersive examples, even interact with physical objects. The captured spatial information is stored digitally as a spatial map or graph of 3D points, called a *point cloud*, which is accompanied by mesh information to indicate how the points, when connected, represent surfaces and other structures in the user environment. However, these 3D spatial maps that may contain sensitive information can be stored and accessed by a potential adversary (as shown in Fig. 1), and be further utilized for functionalities beyond the application's intended function such as aggressive localized advertisements. And, so far, there are *no* mechanisms in place that ensure user data privacy in MR platforms.
+AR/MR platforms such as [Google ARCore](https://developers.google.com/ar/), [Apple ARKit](https://developer.apple.com/documentation/arkit), and [Windows Mixed Reality API](https://www.microsoft.com/en-au/windows/windows-mixed-reality) requires spatial understanding of the user environment in order to deliver virtual augmentations that seemingly inhabit the real world, and, in some immersive examples, even interact with physical objects. The captured spatial information is stored digitally as a spatial map or graph of 3D points, called a *point cloud*, which is accompanied by mesh information to indicate how the points, when connected, represent surfaces and other structures in the user environment. However, these 3D spatial maps that may contain sensitive information can be stored and accessed by a potential adversary (as shown in Fig. 1), and be further utilized for functionalities beyond the application's intended function such as aggressive localized advertisements. And, so far, there are *no* mechanisms in place that ensure user data privacy in MR platforms.
 
 In light of this, first, we present an attacker that not only recognizes the general space, i.e. *inter-space*, but also infers the user’s location within the space, i.e. *intra-space*. To construct the attacker, we build up on existing place recognition methods that have been applied on 3D lidar data and modify it to the scale on which 3D data is captured by MR platforms. We demonstrate how easy it is to extend these 3D recognition methods to be used as an attacker in the MR scenario. Then, we present *spatial plane generalizations* with *conservative plane releasing* as a simple privacy approach which we insert as an intermediary layer of protection as shown in Fig. 2.
 
@@ -36,16 +36,16 @@ Pre-requisites
 * HDF5
 * Bz2
 
-Sample data is available ![here](https://drive.google.com/drive/folders/1IMVuLJxuKeV9HchGY1Wet5IabK2NS4hc). Put the testing_samples and testing_results directory within the head directory of this repo after cloning.
+Sample data is available [here](https://drive.google.com/drive/folders/1IMVuLJxuKeV9HchGY1Wet5IabK2NS4hc). Put the testing_samples and testing_results directory within the head directory of this repo after cloning.
 
-The notebook ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb) contains a step-by-step replication of the work at a smaller scale, i.e. less sample iterations. It uses prepared sample data for various scenarios. The notebook ![3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb) can be used to generate new samples with varying parameters. As one can inspect, we vary the following parameters on both Raw spaces and [RANSAC] generalized spaces: 
+The notebook [3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb) contains a step-by-step replication of the work at a smaller scale, i.e. less sample iterations. It uses prepared sample data for various scenarios. The notebook [3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb) can be used to generate new samples with varying parameters. As one can inspect, we vary the following parameters on both Raw spaces and [RANSAC] generalized spaces: 
 1. the size, i.e radius, of the revealed space
 2. the number of successively released partial spaces
 3. the number of *generalized* planes released
 
-A separate notebook, i.e. ![3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb), just plots the available sample results.
+A separate notebook, i.e. [3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb), just plots the available sample results.
 
-## Manual to ![3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb)
+## Manual to [3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb)
 
 Step 0: Extract the point cloud from the OBJ files.
 
@@ -58,7 +58,7 @@ Step 2.1: Generate partial spaces.
 Step 2.2: Generate successive partial spaces.
 
 
-## Manual to ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb)
+## Manual to [3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb)
 
 Step 1.1: Test RAW partial spaces.
 
@@ -74,7 +74,7 @@ Step 3.1: Test successive partial spaces with conservative releasing.
 
 Step 3.2: Results of successive partial spaces with conservative releasing.
 
-## Manual to ![3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb)
+## Manual to [3D-spatial-privacy-results](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-results.ipynb)
 
 Note: We are using the uploaded results in bz2 files for this notebook. The results in regular pickle files are not available iin this repo. But, of course, you can rerun the testing to produce new pickle files and use it in this notebook. The file access to the regular pickle files are just commented out, so you can just uncomment them to use them.
 
