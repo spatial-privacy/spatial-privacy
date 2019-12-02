@@ -36,7 +36,7 @@ Pre-requisites
 * HDF5
 * Bz2
 
-Sample data is available ![here](https://drive.google.com/drive/folders/1IMVuLJxuKeV9HchGY1Wet5IabK2NS4hc?usp=sharing). Put the testing_samples and testing_results directory within the head directory of this repo.
+Sample data is available ![here](https://drive.google.com/drive/folders/1IMVuLJxuKeV9HchGY1Wet5IabK2NS4hc). Put the testing_samples and testing_results directory within the head directory of this repo after cloning.
 
 The notebook ![3D-spatial-privacy-testing](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-testing.ipynb) contains a step-by-step replication of the work at a smaller scale, i.e. less sample iterations. It uses prepared sample data for various scenarios. The notebook ![3D-spatial-privacy-generate-samples](https://github.com/spatial-privacy/spatial-privacy/blob/master/3D-spatial-privacy-generate-samples.ipynb) can be used to generate new samples with varying parameters. As one can inspect, we vary the following parameters on both Raw spaces and [RANSAC] generalized spaces: 
 1. the size, i.e radius, of the revealed space
